@@ -1,0 +1,55 @@
+import argparse
+import os
+import pytorch_lightning as pl
+import torchvision.transforms as transforms
+
+from pytorch_lightning.loggers import TensorBoardLogger
+from torch.utils.data import DataLoader
+from torchvision.transforms import InterpolationMode
+
+from modules.datasets.helpers.cedar_df import cedar_df
+from modules.datasets.torch.CEDARDataset import CEDARDataset
+from modules.models.SigNetSiamese import SigNetSiamese
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--cedar-path", type=str, help="Path to CEDAR dataset folder")
+parser.add_argument("--batch-size", type=int, default=16)
+parser.add_argument("--num-workers", type=int, default=15)
+parser.add_argument("--epochs", type=int, default=20)
+args = parser.parse_args()
+
+BATCH_SIZE = 16
+
+train_df, test_df, stdev = cedar_df(args.cedar_path)
+
+print(f"Loaded CEDAR dataset and calculated stdev to be {stdev}")
+
+transform = transforms.Compose(
+    [
+        transforms.Resize([155, 220], interpolation=InterpolationMode.BILINEAR),
+        transforms.RandomInvert(p=1.0),
+        transforms.ToTensor(),
+        # Divide by stdev but don't subtract by a mean value
+        transforms.Normalize(mean=0, std=stdev),
+    ]
+)
+
+train_dataset = CEDARDataset(train_df, transform)
+train_dataloader = DataLoader(
+    train_dataset, batch_size=BATCH_SIZE, num_workers=args.num_workers
+)
+
+model = SigNetSiamese()
+
+os.makedirs("checkpoints", exist_ok=True)
+
+logger = TensorBoardLogger("tb_logs", name="cedar")
+trainer = pl.Trainer(
+    default_root_dir="checkpoints",
+    logger=logger,
+    min_epochs=args.epochs,
+    max_epochs=args.epochs,
+)
+
+trainer.fit(model, train_dataloader)
