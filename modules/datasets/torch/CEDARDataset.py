@@ -5,6 +5,7 @@ import torch
 
 from PIL import Image
 from torch.utils.data import Dataset
+from torchvision.transforms import functional as F
 
 from modules.datasets.helpers.cedar_df import cedar_df
 from modules.datasets.helpers.constants import TRANSFORMS_TRAIN

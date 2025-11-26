@@ -85,7 +85,9 @@ def cedar_df(cedar_path, test_size=DEFAULT_TEST_SIZE):
         for path in cedar_df_train["path_first"].unique()
     ]
     transformed_images = [TRANSFORMS_PRE(image) for image in PIL_images]
-    np_images = [np.array(image) for image in PIL_images]
+
+    np_images = [np.array(image) for image in transformed_images]
+
     pixels = np.concatenate([image.flatten() for image in np_images])
 
     stdev = np.std(pixels)

@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.transforms import InterpolationMode
 
+from modules.datasets.helpers.constants import TRANSFORMS_TRAIN
 from modules.datasets.helpers.cedar_df import cedar_df
 from modules.datasets.torch.CEDARDataset import CEDARDataset
 from modules.models.SigNetSiamese import SigNetSiamese
@@ -18,27 +19,15 @@ parser.add_argument("--num-workers", type=int, default=15)
 parser.add_argument("--epochs", type=int, default=20)
 args = parser.parse_args()
 
-BATCH_SIZE = 16
-
 train_df, test_df, stdev = cedar_df(args.cedar_path)
 
 print(f"Loaded CEDAR dataset and calculated stdev to be {stdev}")
 print(f"Test dataset size: {len(test_df)}")
 
-transform = transforms.Compose(
-    [
-        transforms.Resize([155, 220], interpolation=InterpolationMode.BILINEAR),
-        transforms.RandomInvert(p=1.0),
-        transforms.PILToTensor(),
-        tensor.to(torch.float)
-        # Divide by stdev but don't subtract by a mean value
-        transforms.Normalize(mean=0, std=stdev),
-    ]
-)
 
-test_dataset = CEDARDataset(test_df, transform)
+test_dataset = CEDARDataset(test_df, TRANSFORMS_TRAIN(stdev))
 test_dataloader = DataLoader(
-    test_dataset, batch_size=BATCH_SIZE, num_workers=args.num_workers
+    test_dataset, batch_size=args.batch_size, num_workers=args.num_workers
 )
 
 model = SigNetSiamese.load_from_checkpoint(args.ckpt_path)
