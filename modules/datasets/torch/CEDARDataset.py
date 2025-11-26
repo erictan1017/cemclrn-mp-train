@@ -27,11 +27,11 @@ class CEDARDataset(Dataset):
         x2 = self.transform(Image.open(data.path_second).convert("L"))
 
         if data.type_first == "original" and data.type_second == "original":
-            return x1, x2, 1
+            return x1, x2, 0
         elif data.type_first == "forged" and data.type_second == "original":
-            return x1, x2, 0
+            return x1, x2, 1
         elif data.type_first == "original" and data.type_second == "forged":
-            return x1, x2, 0
+            return x1, x2, 1
 
 
 if __name__ == "__main__":

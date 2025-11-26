@@ -1,6 +1,7 @@
 data/
 checkpoints/
 tb_logs/
+lightning_logs/
 
 # https://code.ornl.gov/dlq/distributed-deep-learning-examples/-/blob/master/examples/pytorch/BERT/.gitignore
 
