@@ -11,12 +11,10 @@ TRANSFORMS_PRE = transforms.Compose(
     [
         transforms.Resize([155, 220], interpolation=InterpolationMode.BILINEAR),
         transforms.RandomInvert(p=1.0),
-        transforms.PILToTensor(),
+        transforms.ToTensor(),
         OtsuBinarize(),
-        transforms_v2.ToDtype(torch.float32, scale=False),
     ]
 )
-# transforms_v2.ToDtype(torch.float32, scale=False),
 
 
 def TRANSFORMS_TRAIN(stdev):
@@ -27,9 +25,8 @@ def TRANSFORMS_TRAIN(stdev):
         [
             transforms.Resize([155, 220], interpolation=InterpolationMode.BILINEAR),
             transforms.RandomInvert(p=1.0),
-            transforms.PILToTensor(),
+            transforms.ToTensor(),
             OtsuBinarize(),
-            transforms_v2.ToDtype(torch.float32, scale=False),
             # Divide by stdev but don't subtract by a mean value
             transforms.Normalize(mean=0, std=stdev),
         ]
