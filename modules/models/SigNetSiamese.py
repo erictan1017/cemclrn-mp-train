@@ -4,8 +4,8 @@ import torch.nn.functional as F
 from modules.models.SigNetCNN import SigNetCNN
 
 MARGIN = 1
-LEARNING_RATE = 1e-4
-WEIGHT_DECAY = 0.005
+LEARNING_RATE = 1e-5
+WEIGHT_DECAY = 5e-4
 MOMENTUM = 0.9
 FUZZY = 1e-8
 GAMMA = 0.1
@@ -17,9 +17,11 @@ SCHEDULER_MILESTONES = [5, 10]  # 70% and 90% of total epochs (20)
 # Values for α and β are not mentioned, so we use 1
 def contrastive_loss(output1, output2, y):
     euclidean_distance = F.pairwise_distance(output1, output2)
-    pos = (y) * torch.pow(euclidean_distance, 2)
-    neg = (1 - y) * torch.pow(torch.clamp(MARGIN - euclidean_distance, min=0.0), 2)
-    contrastive_loss = torch.mean(pos + neg)
+    contrastive_loss = (1 - y) * euclidean_distance**2 + y * (
+        torch.max(torch.zeros_like(euclidean_distance), MARGIN - euclidean_distance)
+        ** 2
+    )
+    contrastive_loss = torch.mean(contrastive_loss, dtype=torch.float)
 
     return contrastive_loss, euclidean_distance
 
@@ -69,11 +71,6 @@ class SigNetSiamese(pl.LightningModule):
             eps=FUZZY,
         )
 
-        # Paper did not specify milestones for LR scheduler, so we use conventional 70% / 90%
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer,
-            milestones=SCHEDULER_MILESTONES,
-            gamma=GAMMA,  # Divide by 10
-        )
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.1)
 
         return optimizer

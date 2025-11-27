@@ -19,13 +19,13 @@ parser.add_argument("--num-workers", type=int, default=15)
 parser.add_argument("--epochs", type=int, default=20)
 args = parser.parse_args()
 
-train_df, test_df, stdev = cedar_df(args.cedar_path)
+train_df, test_df, mean, stdev = cedar_df(args.cedar_path)
 
 print(f"Loaded CEDAR dataset and calculated stdev to be {stdev}")
 print(f"Test dataset size: {len(test_df)}")
 
 
-test_dataset = CEDARDataset(test_df, TRANSFORMS_TRAIN(stdev))
+test_dataset = CEDARDataset(test_df, TRANSFORMS_TRAIN(mean, stdev))
 test_dataloader = DataLoader(
     test_dataset, batch_size=args.batch_size, num_workers=args.num_workers
 )

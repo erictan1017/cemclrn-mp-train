@@ -29,7 +29,7 @@ class SigNetCNN(nn.Module):
             nn.ReLU(inplace=True),
             # ------------------------------------------------------------------
             # (2) Batch Norm. (ϵ = 10^-6, momentum = 0.1 from Keras 0.9)
-            nn.LazyBatchNorm2d(eps=1e-06, momentum=0.1),
+            nn.LazyBatchNorm2d(eps=1e-06, momentum=0.9),
             # ------------------------------------------------------------------
             # (3) Pooling 96 × 3 × 3 (stride = 2)
             nn.MaxPool2d(kernel_size=3, stride=2),
@@ -41,7 +41,7 @@ class SigNetCNN(nn.Module):
             nn.ReLU(inplace=True),
             # ------------------------------------------------------------------
             # (5) Batch Norm. (ϵ = 10^-6, momentum = 0.1 from Keras 0.9)
-            nn.LazyBatchNorm2d(eps=1e-06, momentum=0.1),
+            nn.LazyBatchNorm2d(eps=1e-06, momentum=0.9),
             # ------------------------------------------------------------------
             # (6) Pooling 256 × 3 × 3 (stride = 2) + Dropout (p = 0.3)
             nn.MaxPool2d(kernel_size=3, stride=2),
@@ -71,11 +71,11 @@ class SigNetCNN(nn.Module):
             # 108800 = 17 * 25 * 256
             nn.Linear(3840, 1024),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.7),
+            nn.Dropout(p=0.5),
             # ------------------------------------------------------------------
             # (11) FC (OUTPUT_CLASSES) + ReLU
             nn.Linear(1024, OUTPUT_CLASSES),
-            nn.ReLU(inplace=True),
+            # nn.ReLU(inplace=True),
         )
 
         self.features.apply(initialize_weights)

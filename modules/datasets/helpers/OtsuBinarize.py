@@ -9,15 +9,14 @@ class OtsuBinarize:
         if input_tensor.dim() != 3 or input_tensor.shape[0] != 1:
             raise ValueError("Expected single-channel (1, H, W) tensor.")
 
-        # Assumed to be torch.int8
-        img_np = input_tensor.squeeze(0).cpu().numpy()
+        img_np = (input_tensor.squeeze(0).cpu().numpy() * 255).astype(np.uint8)
 
         # Perform Otsu binarization
         _, binary_img_np = cv2.threshold(
             img_np, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
         )
 
-        binary_tensor = torch.from_numpy(binary_img_np).unsqueeze(0)
+        binary_tensor = torch.from_numpy(binary_img_np).float().unsqueeze(0) / 255.0
 
         # Will return a torch.int8 tensor
         return binary_tensor

@@ -23,12 +23,12 @@ parser.add_argument("--num-workers", type=int, default=15)
 parser.add_argument("--epochs", type=int, default=20)
 args = parser.parse_args()
 
-train_df, test_df, stdev = cedar_df(args.cedar_path)
+train_df, test_df, mean, stdev = cedar_df(args.cedar_path)
 
-print(f"Loaded CEDAR dataset and calculated stdev to be {stdev}")
+print(f"Loaded CEDAR dataset and calculated stdev={stdev}, mean={mean}")
 
 
-full_train_dataset = CEDARDataset(train_df, TRANSFORMS_TRAIN(stdev))
+full_train_dataset = CEDARDataset(train_df, TRANSFORMS_TRAIN(mean, stdev))
 
 TRAIN_COUNT = int(0.9 * len(full_train_dataset))
 VAL_COUNT = int(0.1 * len(full_train_dataset))

@@ -90,10 +90,11 @@ def cedar_df(cedar_path, test_size=DEFAULT_TEST_SIZE):
 
     pixels = np.concatenate([image.flatten() for image in np_images])
 
+    mean = np.mean(pixels)
     stdev = np.std(pixels)
     # --------------------------------------------------------------------------
 
-    return cedar_df_train, cedar_df_test, stdev
+    return cedar_df_train, cedar_df_test, mean, stdev
 
 
 if __name__ == "__main__":

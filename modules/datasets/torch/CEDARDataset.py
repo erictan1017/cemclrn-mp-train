@@ -46,9 +46,9 @@ if __name__ == "__main__":
     parser.add_argument("--cedar-path", type=str, help="Path to CEDAR dataset folder")
     args = parser.parse_args()
 
-    train_df, test_df, stdev = cedar_df(args.cedar_path)
+    train_df, test_df, mean, stdev = cedar_df(args.cedar_path)
 
     print(f"Loaded CEDAR dataset and calculated stdev to be {stdev}")
 
-    dataset = CEDARDataset(train_df, TRANSFORMS_TRAIN(stdev))
+    dataset = CEDARDataset(train_df, TRANSFORMS_TRAIN(mean, stdev))
     print(dataset.__getitem__(0))
