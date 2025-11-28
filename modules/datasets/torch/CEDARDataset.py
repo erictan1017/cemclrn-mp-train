@@ -31,7 +31,7 @@ class CEDARDataset(Dataset):
         print(x1)
         F.to_pil_image(x1 / torch.max(x1)).show()
         quit()
-        """
+        # """
 
         if data.type_first == "original" and data.type_second == "original":
             return x1, x2, 1

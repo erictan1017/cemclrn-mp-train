@@ -13,7 +13,7 @@ class OtsuBinarize:
 
         # Perform Otsu binarization
         _, binary_img_np = cv2.threshold(
-            img_np, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+            img_np, 25, 255, cv2.THRESH_TOZERO + cv2.THRESH_OTSU
         )
 
         binary_tensor = torch.from_numpy(binary_img_np).float().unsqueeze(0) / 255.0

@@ -1,23 +1,28 @@
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
+import torchmetrics as tm
+import numpy as np
+
+import matplotlib.pyplot as plt  #
+import seaborn as sns
+
 from modules.models.SigNetCNN import SigNetCNN
 
 MARGIN = 1
 LEARNING_RATE = 1e-5
-WEIGHT_DECAY = 5e-4
+WEIGHT_DECAY = 5e-4  # 0.0005
 MOMENTUM = 0.9
 FUZZY = 1e-8
 GAMMA = 0.1
-SCHEDULER_MILESTONES = [5, 10]  # 70% and 90% of total epochs (20)
 
 
-# See https://github.com/HarshSulakhe/siamesenetworks-pytorch/blob/master/loss.py
+# See https://github.com/VinhLoiIT/signet-pytorch/blob/master/model.py
 # Based on Eq. 1 of SigNet paper (https://arxiv.org/pdf/1707.02131)
 # Values for α and β are not mentioned, so we use 1
 def contrastive_loss(output1, output2, y):
     euclidean_distance = F.pairwise_distance(output1, output2)
-    contrastive_loss = (1 - y) * euclidean_distance**2 + y * (
+    contrastive_loss = y * euclidean_distance**2 + (1 - y) * (
         torch.max(torch.zeros_like(euclidean_distance), MARGIN - euclidean_distance)
         ** 2
     )
@@ -27,11 +32,14 @@ def contrastive_loss(output1, output2, y):
 
 
 class SigNetSiamese(pl.LightningModule):
-    def __init__(self, learning_rate=1e-4, margin=1.0):
+    def __init__(self):
         super().__init__()
 
         # "Branch" CNN of the Siamese network
         self.cnn = SigNetCNN()
+
+        self.test_distances = []
+        self.test_y = []
 
     def forward(self, x1, x2):
         y1 = self.cnn(x1)
@@ -41,12 +49,13 @@ class SigNetSiamese(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x1, x2, y = batch
         output1, output2 = self(x1, x2)
-        loss = contrastive_loss(output1, output2, y)[0]
+        loss, _ = contrastive_loss(output1, output2, y)
 
         # Log training loss
         self.log(
             "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
         )
+
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -62,6 +71,39 @@ class SigNetSiamese(pl.LightningModule):
 
     # We skip defining validation_step for now, as we train with a fixed number of epochs instead.
 
+    def test_step(self, batch, batch_idx):
+        x1, x2, y = batch
+        output1, output2 = self(x1, x2)
+
+        loss, distance = contrastive_loss(output1, output2, y)
+
+        self.log(
+            "test_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+        )
+
+        self.test_distances.append(distance.cpu().numpy())
+        self.test_y.append(y.cpu().numpy())
+
+    def on_test_epoch_end(self):
+        distances = torch.from_numpy(np.concatenate(self.test_distances))
+        y = torch.from_numpy(np.concatenate(self.test_y))
+
+        min_threshold_d = min(distances)
+        max_threshold_d = max(distances)
+        max_acc = 0
+        same_id = y == 1
+
+        for threshold_d in torch.arange(min_threshold_d, max_threshold_d + 0.1, 0.1):
+            true_positive = (distances <= threshold_d) & (same_id)
+            true_positive_rate = true_positive.sum().float() / same_id.sum().float()
+            true_negative = (distances > threshold_d) & (~same_id)
+            true_negative_rate = true_negative.sum().float() / (~same_id).sum().float()
+
+            acc = 0.5 * (true_negative_rate + true_positive_rate)
+            max_acc = max(max_acc, acc)
+
+        self.log("test/max_accuracy", max_acc, prog_bar=True)
+
     def configure_optimizers(self):
         optimizer = torch.optim.RMSprop(
             self.cnn.parameters(),
@@ -71,6 +113,14 @@ class SigNetSiamese(pl.LightningModule):
             eps=FUZZY,
         )
 
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.1)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.1)  # Divide by 10
+
+        """
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer,
+            milestones=[14, 18],
+            gamma=0.1,  # Divide by 10
+        )
+        """
 
         return optimizer

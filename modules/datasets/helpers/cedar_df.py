@@ -74,8 +74,16 @@ def cedar_df(cedar_path, test_size=DEFAULT_TEST_SIZE):
     gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=RANDOM_STATE)
     train_idx, test_idx = next(gss.split(cedar_df, groups=cedar_df["signer"]))
 
-    cedar_df_train = cedar_df.iloc[train_idx]
+    cedar_df_train_full = cedar_df.iloc[train_idx]
     cedar_df_test = cedar_df.iloc[test_idx]
+
+    gss = GroupShuffleSplit(n_splits=1, test_size=5 / 50, random_state=RANDOM_STATE)
+    train_idx, valid_idx = next(
+        gss.split(cedar_df_train_full, groups=cedar_df_train_full["signer"])
+    )
+
+    cedar_df_valid = cedar_df_train_full.iloc[valid_idx]
+    cedar_df_train = cedar_df_train_full.iloc[train_idx]
 
     # TODO ---------------------------------------------------------------------
     # Calculate stdev of all images
@@ -94,7 +102,11 @@ def cedar_df(cedar_path, test_size=DEFAULT_TEST_SIZE):
     stdev = np.std(pixels)
     # --------------------------------------------------------------------------
 
-    return cedar_df_train, cedar_df_test, mean, stdev
+    print(f"Training: {len(cedar_df_train)}")
+    print(f"Testing: {len(cedar_df_test)}")
+    print(f"Validation: {len(cedar_df_valid)}")
+
+    return cedar_df_train, cedar_df_test, cedar_df_valid, mean, stdev
 
 
 if __name__ == "__main__":
